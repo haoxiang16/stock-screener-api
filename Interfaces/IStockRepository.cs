@@ -6,5 +6,6 @@ namespace StockAPI.Interfaces
     {
         Task<IEnumerable<IncomeStatement>> GetAllYearlyEPSAsync();
         Task<IEnumerable<Company>> GetCompaniesByCodesAsync(IEnumerable<string> companyCodes);
+        Task<IEnumerable<IncomeStatement>> GetYearlyFinancialsAsync();
     }
 }

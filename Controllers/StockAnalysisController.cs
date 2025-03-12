@@ -28,5 +28,35 @@ namespace StockAPI.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpGet("growing-financials")]
+        public async Task<ActionResult<IEnumerable<FinancialGrowthDTO>>> GetGrowingFinancials(
+            [FromQuery] int? epsYears,
+            [FromQuery] int? operatingMarginYears,
+            [FromQuery] int? grossMarginYears,
+            [FromQuery] int? netProfitMarginYears,
+            [FromQuery] decimal? minOperatingMargin,
+            [FromQuery] int? minOperatingMarginYears)
+        {
+            try
+            {
+                var query = new FinancialGrowthQueryDTO
+                {
+                    EpsYears = epsYears,
+                    OperatingMarginYears = operatingMarginYears,
+                    GrossMarginYears = grossMarginYears,
+                    NetProfitMarginYears = netProfitMarginYears,
+                    MinOperatingMargin = minOperatingMargin,
+                    MinOperatingMarginYears = minOperatingMarginYears
+                };
+
+                var companies = await _service.GetConsecutiveGrowingFinancialsAsync(query);
+                return Ok(companies);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 } 

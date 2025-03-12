@@ -28,5 +28,14 @@ namespace StockAPI.Repositories
                 .Where(c => companyCodes.Contains(c.CompanyCode))
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<IncomeStatement>> GetYearlyFinancialsAsync()
+        {
+            return await _context.IncomeStatements
+                .Where(s => s.Season == 4) // 只取第四季的數據
+                .OrderBy(s => s.CompanyCode)
+                .ThenBy(s => s.Year)
+                .ToListAsync();
+        }
     }
 } 
