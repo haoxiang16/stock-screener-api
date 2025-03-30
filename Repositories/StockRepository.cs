@@ -6,9 +6,9 @@ namespace StockAPI.Repositories
 {
     public class StockRepository : IStockRepository
     {
-        private readonly stockContext _context;
+        private readonly StockContext _context;
 
-        public StockRepository(stockContext context)
+        public StockRepository(StockContext context)
         {
             _context = context;
         }

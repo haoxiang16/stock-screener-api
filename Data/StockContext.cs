@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace StockAPI.Models;
 
-public partial class stockContext : DbContext
+public partial class StockContext : DbContext
 {
-    public stockContext(DbContextOptions<stockContext> options)
+    public StockContext(DbContextOptions<StockContext> options)
         : base(options)
     {
     }
@@ -18,6 +18,8 @@ public partial class stockContext : DbContext
     public virtual DbSet<Company> Companies { get; set; }
 
     public virtual DbSet<IncomeStatement> IncomeStatements { get; set; }
+
+    public virtual DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,11 +75,20 @@ public partial class stockContext : DbContext
             entity.Property(e => e.CompanyName)
                 .HasMaxLength(100)
                 .HasColumnName("company_name");
+
+            entity.HasIndex(e => e.CompanyCode)
+                .HasName("IX_Company_CompanyCode");
         });
 
         modelBuilder.Entity<IncomeStatement>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__IncomeSt__3213E83F31E9F847");
+
+            entity.HasIndex(e => new { e.CompanyCode, e.Year, e.Season })
+                .HasName("IX_IncomeStatements_CompanyCode_Year_Season");
+
+            entity.HasIndex(e => e.Season)
+                .HasName("IX_IncomeStatements_Season");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CompanyCode)
@@ -172,8 +183,46 @@ public partial class stockContext : DbContext
                 .HasConstraintName("FK__IncomeSta__compa__14270015");
         });
 
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(e => e.Email, "UQ_Users_Email").IsUnique();
+
+            entity.HasIndex(e => e.Username, "UQ_Users_Username").IsUnique();
+
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getutcdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.Email)
+                .IsRequired()
+                .HasMaxLength(100);
+            entity.Property(e => e.Password)
+                .IsRequired()
+                .HasMaxLength(256);
+            entity.Property(e => e.Username)
+                .IsRequired()
+                .HasMaxLength(50);
+        });
+
         OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        if (!optionsBuilder.IsConfigured)
+        {
+            // 設置命令超時
+            optionsBuilder.UseSqlServer(
+                "Server=(LocalDb)\\MSSQLLocalDB;Database=stock;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=true",
+                sqlServerOptionsAction: sqlOptions =>
+                {
+                    sqlOptions.CommandTimeout(300); // 設置更高的超時時間（5分鐘）
+                    sqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,  // 最多重試3次
+                        maxRetryDelay: TimeSpan.FromSeconds(30), // 最長延遲30秒
+                        errorNumbersToAdd: null); // 使用默認的錯誤碼
+                });
+        }
+    }
 }
