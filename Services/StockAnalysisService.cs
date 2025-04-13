@@ -43,13 +43,13 @@ namespace StockAPI.Services
             // 一次性取得所有符合條件公司的詳細資料
             var companies = await _stockRepository.GetCompaniesByCodesAsync(qualifyingCompanyCodes);
 
-            // 構造 DTO 資料，取得最新 years 年的 EPS 數據（按年份升序排列）
+            // 構造 DTO 資料，取得最新 years 年的 EPS 數據（按年份降序排列）
             var result = companies.Select(company =>
             {
                 var sortedStatements = statements
                     .Where(s => s.CompanyCode == company.CompanyCode && s.Eps != null)
-                    .OrderBy(s => s.Year)
-                    .TakeLast(years) 
+                    .OrderByDescending(s => s.Year)
+                    .Take(years) 
                     .Select(s => new YearlyEpsDTO
                     {
                         Year = s.Year, 
@@ -104,8 +104,8 @@ namespace StockAPI.Services
             {
                 var financials = statements
                     .Where(s => s.CompanyCode == company.CompanyCode)
-                    .OrderBy(s => s.Year)
-                    .TakeLast(maxYears)
+                    .OrderByDescending(s => s.Year)
+                    .Take(maxYears)
                     .Select(s => new YearlyFinancialDTO
                     {
                         Year = s.Year,
@@ -221,7 +221,8 @@ namespace StockAPI.Services
             var operatingIncome = statement.Revenue - statement.OperatingCosts - statement.OperatingExpenses;
             
             // 營業利益率 = (營業利益 ÷ 營業收入) × 100%
-            return (operatingIncome / statement.Revenue) * 100;
+            var operatingMargin = (operatingIncome / statement.Revenue) * 100;
+            return operatingMargin;
         }
 
         private decimal? CalculateGrossMargin(IncomeStatement statement)
@@ -229,9 +230,12 @@ namespace StockAPI.Services
             if (statement.Revenue == 0 || statement.Revenue == null)
                 return null;
 
-            // 毛利率 = (營業收入 - 營業成本) / 營業收入 × 100%
+            // 毛利 = 營業收入 - 營業成本
             var grossProfit = statement.Revenue - statement.OperatingCosts;
-            return (grossProfit / statement.Revenue) * 100;
+            
+            // 毛利率 = 毛利 / 營業收入 × 100%
+            var grossMargin = (grossProfit / statement.Revenue) * 100;
+            return grossMargin;
         }
 
         private decimal? CalculateNetProfitMargin(IncomeStatement statement)
@@ -240,44 +244,66 @@ namespace StockAPI.Services
                 return null;
 
             // 稅後淨利率 = 稅後淨利 / 營業收入 × 100%
-            return (statement.NetIncome / statement.Revenue) * 100;
+            var netProfitMargin = (statement.NetIncome / statement.Revenue) * 100;
+            return netProfitMargin;
         }
 
         private bool IsEpsGrowing(List<IncomeStatement> statements)
         {
-            return statements.Zip(statements.Skip(1), (prev, curr) => 
-                prev.Eps != null && curr.Eps != null && curr.Eps > prev.Eps)
-                .All(isGrowing => isGrowing);
+            var growthResults = statements.Zip(statements.Skip(1), (prev, curr) =>
+            {
+                var isValid = prev.Eps != null && curr.Eps != null;
+                var isGrowing = isValid && curr.Eps > prev.Eps;
+                return isGrowing;
+            }).ToList();
+
+            var isAllGrowing = growthResults.All(isGrowing => isGrowing);
+            return isAllGrowing;
         }
 
         private bool IsOperatingMarginGrowing(List<IncomeStatement> statements)
         {
-            return statements.Zip(statements.Skip(1), (prev, curr) => 
+            var growthResults = statements.Zip(statements.Skip(1), (prev, curr) =>
             {
                 var prevMargin = CalculateOperatingMargin(prev);
                 var currMargin = CalculateOperatingMargin(curr);
-                return prevMargin.HasValue && currMargin.HasValue && currMargin > prevMargin;
-            }).All(isGrowing => isGrowing);
+                var isValid = prevMargin.HasValue && currMargin.HasValue;
+                var isGrowing = isValid && currMargin > prevMargin;
+                return isGrowing;
+            }).ToList();
+
+            var isAllGrowing = growthResults.All(isGrowing => isGrowing);
+            return isAllGrowing;
         }
 
         private bool IsGrossMarginGrowing(List<IncomeStatement> statements)
         {
-            return statements.Zip(statements.Skip(1), (prev, curr) => 
+            var growthResults = statements.Zip(statements.Skip(1), (prev, curr) =>
             {
                 var prevMargin = CalculateGrossMargin(prev);
                 var currMargin = CalculateGrossMargin(curr);
-                return prevMargin.HasValue && currMargin.HasValue && currMargin > prevMargin;
-            }).All(isGrowing => isGrowing);
+                var isValid = prevMargin.HasValue && currMargin.HasValue;
+                var isGrowing = isValid && currMargin > prevMargin;
+                return isGrowing;
+            }).ToList();
+
+            var isAllGrowing = growthResults.All(isGrowing => isGrowing);
+            return isAllGrowing;
         }
 
         private bool IsNetProfitMarginGrowing(List<IncomeStatement> statements)
         {
-            return statements.Zip(statements.Skip(1), (prev, curr) => 
+            var growthResults = statements.Zip(statements.Skip(1), (prev, curr) =>
             {
                 var prevMargin = CalculateNetProfitMargin(prev);
                 var currMargin = CalculateNetProfitMargin(curr);
-                return prevMargin.HasValue && currMargin.HasValue && currMargin > prevMargin;
-            }).All(isGrowing => isGrowing);
+                var isValid = prevMargin.HasValue && currMargin.HasValue;
+                var isGrowing = isValid && currMargin > prevMargin;
+                return isGrowing;
+            }).ToList();
+
+            var isAllGrowing = growthResults.All(isGrowing => isGrowing);
+            return isAllGrowing;
         }
     }
 }

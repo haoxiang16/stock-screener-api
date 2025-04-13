@@ -52,14 +52,6 @@ builder.Services.AddDbContext<StockContext>(options =>
         })
     );
 
-// 添加記憶體快取服務
-builder.Services.AddMemoryCache(options =>
-{
-    // 重新啟用大小限制
-    options.SizeLimit = 1024 * 1024 * 100; // 100MB 限制
-    options.ExpirationScanFrequency = TimeSpan.FromMinutes(5); // 每5分鐘掃描過期項
-});
-
 // 添加響應壓縮
 builder.Services.AddResponseCompression(options =>
 {
