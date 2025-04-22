@@ -7,6 +7,5 @@ namespace StockAPI.Models.DTOs
         public int? GrossMarginYears { get; set; }
         public int? NetProfitMarginYears { get; set; }
         public decimal? MinOperatingMargin { get; set; }
-        public int? MinOperatingMarginYears { get; set; }
     }
 } 

@@ -12,14 +12,7 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowSpecificOrigin",
-        builder => builder.WithOrigins("http://localhost:3000") // 替換為您的前端 URL
-                          .AllowAnyHeader()
-                          .AllowAnyMethod());
-});
-// 配置 JWT
+
 var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("JwtSettings"));
 
@@ -35,7 +28,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidIssuer = jwtSettings.Issuer,
             ValidAudience = jwtSettings.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwtSettings.Key))
+            Encoding.UTF8.GetBytes(jwtSettings.Key))
         };
     });
 
@@ -65,8 +58,6 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "Stock API", Version = "v1" });
-    
-    // 加入 JWT 認證設定
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
@@ -104,12 +95,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-
+app.UseSwagger();
+app.UseSwaggerUI();
 // 啟用響應壓縮
 app.UseResponseCompression();
 
 app.UseHttpsRedirection();
-app.UseCors("AllowSpecificOrigin"); // 使用 CORS 策略
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
