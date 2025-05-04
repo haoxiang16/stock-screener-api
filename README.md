@@ -1,7 +1,6 @@
 # StockAPI
 
-6. 訪問Swagger文檔：
-   瀏覽器中打開 `https://stockscanner.azurewebsites.net/swagger`
+  - Swagger：[https://stockscanner.azurewebsites.net/swagger/](https://stockscanner.azurewebsites.net/swagger/) 
 
 ## 主要功能
  
