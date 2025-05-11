@@ -15,7 +15,76 @@ namespace StockAPI.Services
             _stockRepository = stockRepository;
         }
 
-        public async Task<IEnumerable<FinancialGrowthDTO>> GetConsecutiveGrowingFinancialsAsync(FinancialGrowthQueryDTO query)
+        public async Task<PaginatedResult<CompanyGrowthDTO>> GetConsecutiveGrowingEPSCompaniesAsync(int years = 5, int pageNumber = 1, int pageSize = 10)
+        {
+            // 取得所有年度 EPS 數據
+            var statements = await _stockRepository.GetAllYearlyEPSAsync();
+
+            // 以公司代碼分組並篩選出資料數量足夠的公司
+            var qualifyingCompanyCodes = statements
+                .GroupBy(s => s.CompanyCode)
+                .Where(g => g.Count(s => s.Eps != null) >= years)
+                .Where(g =>
+                {
+                    // 取得最近 years 年的資料，按年份升序排列
+                    var sortedStatements = g
+                        .Where(s => s.Eps != null)
+                        .OrderByDescending(s => s.Year)
+                        .Take(years)
+                        .OrderBy(s => s.Year)
+                        .ToList();
+                    // 使用 Zip 檢查是否每年 EPS 均成長
+                    return sortedStatements.Zip(sortedStatements.Skip(1), (prev, curr) => curr.Eps > prev.Eps)
+                                           .All(isGrowing => isGrowing);
+                })
+                .Select(g => g.Key)
+                .ToList();
+
+            // 計算總數
+            var totalCount = qualifyingCompanyCodes.Count;
+
+            // 分頁處理
+            var pagedCompanyCodes = qualifyingCompanyCodes
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            // 一次性取得所有符合條件公司的詳細資料
+            var companies = await _stockRepository.GetCompaniesByCodesAsync(pagedCompanyCodes);
+
+            // 構造 DTO 資料，取得最新 years 年的 EPS 數據（按年份降序排列）
+            var items = companies.Select(company =>
+            {
+                var sortedStatements = statements
+                    .Where(s => s.CompanyCode == company.CompanyCode && s.Eps != null)
+                    .OrderByDescending(s => s.Year)
+                    .Take(years) 
+                    .Select(s => new YearlyEpsDTO
+                    {
+                        Year = s.Year, 
+                        Eps = s.Eps 
+                    })
+                    .ToList();
+
+                return new CompanyGrowthDTO
+                {
+                    CompanyCode = company.CompanyCode,
+                    CompanyName = company.CompanyName,
+                    YearlyEps = sortedStatements
+                };
+            }).ToList();
+
+            return new PaginatedResult<CompanyGrowthDTO>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            };
+        }
+
+        public async Task<PaginatedResult<FinancialGrowthDTO>> GetConsecutiveGrowingFinancialsAsync(FinancialGrowthQueryDTO query)
         {
             // 取得所有年度財務數據
             var statements = await _stockRepository.GetYearlyFinancialsAsync();
@@ -43,11 +112,20 @@ namespace StockAPI.Services
                 .Select(g => g.Key)
                 .ToList();
 
+            // 計算總數
+            var totalCount = qualifyingCompanyCodes.Count;
+
+            // 分頁處理
+            var pagedCompanyCodes = qualifyingCompanyCodes
+                .Skip((query.PageNumber - 1) * query.PageSize)
+                .Take(query.PageSize)
+                .ToList();
+
             // 取得符合條件公司的詳細資料
-            var companies = await _stockRepository.GetCompaniesByCodesAsync(qualifyingCompanyCodes);
+            var companies = await _stockRepository.GetCompaniesByCodesAsync(pagedCompanyCodes);
 
             // 構造回傳資料
-            var result = companies.Select(company =>
+            var items = companies.Select(company =>
             {
                 var financials = statements
                     .Where(s => s.CompanyCode == company.CompanyCode)
@@ -77,7 +155,14 @@ namespace StockAPI.Services
             .Where(c => c.YearlyFinancials.Any())
             .ToList();
 
-            return result;
+            return new PaginatedResult<FinancialGrowthDTO>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                PageNumber = query.PageNumber,
+                PageSize = query.PageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)query.PageSize)
+            };
         }
 
         private bool IsMatchingCriteria(List<IncomeStatement> statements, FinancialGrowthQueryDTO query)
