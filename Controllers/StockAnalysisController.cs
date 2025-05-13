@@ -17,23 +17,6 @@ namespace StockAPI.Controllers
             _service = service;
         }
 
-        [HttpGet("growing-eps")]
-        public async Task<ActionResult<PaginatedResult<CompanyGrowthDTO>>> GetGrowingEPSCompanies(
-            [FromQuery] int years = 5,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
-        {
-            try
-            {
-                var result = await _service.GetConsecutiveGrowingEPSCompaniesAsync(years, pageNumber, pageSize);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
-            }
-        }
-
         [HttpGet("growing-financials")]
         public async Task<ActionResult<PaginatedResult<FinancialGrowthDTO>>> GetGrowingFinancials(
             [FromQuery] int? epsYears,
