@@ -17,7 +17,7 @@
 - **ORM**: Entity Framework Core
 - **認證機制**: JWT (JSON Web Token)
 - **API文檔**: Swagger/OpenAPI
-- **效能優化**: 響應壓縮、查詢優化
+
 
 
 ### 股票分析
