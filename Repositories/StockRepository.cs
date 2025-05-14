@@ -17,9 +17,9 @@ namespace StockAPI.Repositories
         {
             // 查詢第四季的年度 EPS 數據，以最新年度優先
             var yearlyEpsStatements = await _context.IncomeStatements
-                .Where(s => s.Season == 4) // 只取第四季的數據（年度總 EPS）
+                .Where(s => s.Season == 4) 
                 .OrderBy(s => s.CompanyCode)
-                .ThenByDescending(s => s.Year) // 年份降序排列，最新的年份優先
+                .ThenByDescending(s => s.Year) 
                 .ToListAsync();
 
             return yearlyEpsStatements;
@@ -39,9 +39,9 @@ namespace StockAPI.Repositories
         {
             // 查詢第四季的年度財務數據，以最新年度優先
             var yearlyFinancials = await _context.IncomeStatements
-                .Where(s => s.Season == 4) // 只取第四季的數據
+                .Where(s => s.Season == 4) 
                 .OrderBy(s => s.CompanyCode)
-                .ThenByDescending(s => s.Year) // 年份降序排列，最新的年份優先
+                .ThenByDescending(s => s.Year) 
                 .ToListAsync();
 
             return yearlyFinancials;
