@@ -100,7 +100,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStockAnalysisService, StockAnalysisService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
-
+builder.WebHost.UseUrls("http://+:80");
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -111,6 +111,7 @@ if (app.Environment.IsDevelopment())
 }
 app.UseSwagger();
 app.UseSwaggerUI();
+
 // 啟用響應壓縮
 app.UseResponseCompression();
 
