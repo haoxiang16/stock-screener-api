@@ -1,6 +1,6 @@
 # StockAPI
 
-  - Swagger：[https://stockscanner.azurewebsites.net/swagger/](https://stockscanner.azurewebsites.net/swagger/) 
+  - Swagger：[https://stock-screener-ai.com/swagger](https://stock-screener-ai.com/swagger) 
 
 ## 主要功能
  
